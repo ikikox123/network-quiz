@@ -95,7 +95,6 @@ const MASTER_DB = [
     { q: "星狀拓樸的最大風險？", o: ["中央裝置故障導致全網中斷", "佈線困難", "成本太高", "速度太慢"], a: 0 },
     { q: "網狀拓樸的主要優點？", o: ["穩定性最高，路徑中斷可自動繞道", "成本最低", "最容易安裝", "速度最快"], a: 0 },
     { q: "ADSL 分離器 (Splitter) 的作用？", o: ["分開電話語音與數據訊號", "增加頻寬", "提高安全性", "轉換電壓"], a: 0 },
-    // 補足至 125 題 (其餘為計算變體或細節強化)
     { q: "取樣頻率 8000Hz，8位元量化，速率為？", o: ["64 Kbps", "128 Kbps", "32 Kbps", "256 Kbps"], a: 0 },
     { q: "OC-3 的速度是 OC-1 的幾倍？", o: ["3 倍", "2 倍", "4 倍", "12 倍"], a: 0 },
     { q: "RJ45 接頭有幾個銅片？", o: ["8 個", "4 個", "6 個", "10 個"], a: 0 },
@@ -131,14 +130,13 @@ const MASTER_DB = [
 let quizPool = [];
 let currentIndex = 0;
 let score = 0;
-let answeredCount = 0;
+let currentQuestionData = null; // 儲存當前題目（含打亂後的選項）
 
 function startQuiz() {
     // 洗牌並抽 25 題
     quizPool = [...MASTER_DB].sort(() => Math.random() - 0.5).slice(0, 25);
     currentIndex = 0;
     score = 0;
-    answeredCount = 0;
 
     document.getElementById('start-view').style.display = 'none';
     document.getElementById('result-view').style.display = 'none';
@@ -150,37 +148,54 @@ function startQuiz() {
 }
 
 function renderQuestion() {
-    const data = quizPool[currentIndex];
+    const rawData = quizPool[currentIndex];
     const qText = document.getElementById('question-text');
     const oBox = document.getElementById('options-box');
 
-    qText.innerText = `Q${currentIndex + 1}: ${data.q}`;
+    // 隨機打亂選項
+    const optionsWithIndex = rawData.o.map((text, index) => ({ text, originalIndex: index }));
+    optionsWithIndex.sort(() => Math.random() - 0.5);
+
+    // 儲存當前題目數據，方便判斷正確答案
+    currentQuestionData = {
+        question: rawData.q,
+        shuffledOptions: optionsWithIndex,
+        originalCorrectIndex: rawData.a
+    };
+
+    qText.innerText = `Q${currentIndex + 1}: ${currentQuestionData.question}`;
     oBox.innerHTML = '';
 
-    data.o.forEach((opt, i) => {
+    currentQuestionData.shuffledOptions.forEach((opt, i) => {
         const btn = document.createElement('button');
         btn.className = 'opt-btn';
-        btn.innerText = opt;
+        btn.innerText = opt.text;
         btn.onclick = () => selectOption(i, btn);
         oBox.appendChild(btn);
     });
 }
 
-function selectOption(index, btn) {
+function selectOption(selectedIndex, btn) {
     const btns = document.querySelectorAll('.opt-btn');
     // 禁用所有按鈕，不可改答案
     btns.forEach(b => b.style.pointerEvents = 'none');
 
-    const correct = quizPool[currentIndex].a;
-    if (index === correct) {
+    const selectedOpt = currentQuestionData.shuffledOptions[selectedIndex];
+    const isCorrect = selectedOpt.originalIndex === currentQuestionData.originalCorrectIndex;
+
+    if (isCorrect) {
         btn.classList.add('correct');
         score++;
     } else {
         btn.classList.add('wrong');
-        btns[correct].classList.add('correct');
+        // 找出正確答案的按鈕並標示
+        currentQuestionData.shuffledOptions.forEach((opt, i) => {
+            if (opt.originalIndex === currentQuestionData.originalCorrectIndex) {
+                btns[i].classList.add('correct');
+            }
+        });
     }
 
-    answeredCount++;
     updateStats();
 
     // 延遲後進入下一題

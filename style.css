@@ -321,6 +321,31 @@ nav {
     font-size: 12px;
 }
 
+/* New Start Button Styles */
+.main-start-btn {
+    background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-weight: 500;
+}
+
+.main-start-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.main-start-btn .material-symbols-outlined {
+    font-size: 32px;
+}
+
 @media (max-width: 768px) {
     .sidebar {
         display: none;
