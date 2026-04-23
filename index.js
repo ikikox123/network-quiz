@@ -100,7 +100,7 @@ const MASTER_DB = [
     { q: "RJ45 接頭有幾個銅片？", o: ["8 個", "4 個", "6 個", "10 個"], a: 0 },
     { q: "下列何者抗噪性最強？", o: ["FM", "AM", "ASK", "都不強"], a: 0 },
     { q: "CSMA/CA 中的 RTS 代表？", o: ["Request To Send", "Ready To Send", "Receive To Send", "Router To Server"], a: 0 },
-    { q: "CSMA/CA 中的 CTS 代表？", o: ["Clear To Send", "Confirm To Send", "Check To Send", "Call To Send"], a: 0 },
+    { q: "CSMA/CA 中的實施 CTS 代表？", o: ["Clear To Send", "Confirm To Send", "Check To Send", "Call To Send"], a: 0 },
     { q: "下列何種媒體傳輸距離最遠？", o: ["單模光纖", "多模光纖", "同軸電纜", "雙絞線"], a: 0 },
     { q: "VDSL 速度最高可達？", o: ["52-100 Mbps", "10 Mbps", "1.5 Mbps", "1 Gbps"], a: 0 },
     { q: "SDSL 的特點？", o: ["上下傳對稱", "下載快上傳慢", "僅限語音", "不需要線路"], a: 0 },
@@ -130,11 +130,22 @@ const MASTER_DB = [
 let quizPool = [];
 let currentIndex = 0;
 let score = 0;
-let currentQuestionData = null; // 儲存當前題目（含打亂後的選項）
+let currentQuestionData = null;
+
+// Fisher-Yates 洗牌算法
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 
 function startQuiz() {
-    // 洗牌並抽 25 題
-    quizPool = [...MASTER_DB].sort(() => Math.random() - 0.5).slice(0, 25);
+    // 徹底洗牌整個題庫，然後抽 25 題
+    const fullShuffled = shuffle([...MASTER_DB]);
+    quizPool = fullShuffled.slice(0, 25);
+    
     currentIndex = 0;
     score = 0;
 
@@ -154,9 +165,8 @@ function renderQuestion() {
 
     // 隨機打亂選項
     const optionsWithIndex = rawData.o.map((text, index) => ({ text, originalIndex: index }));
-    optionsWithIndex.sort(() => Math.random() - 0.5);
+    shuffle(optionsWithIndex);
 
-    // 儲存當前題目數據，方便判斷正確答案
     currentQuestionData = {
         question: rawData.q,
         shuffledOptions: optionsWithIndex,
@@ -177,7 +187,6 @@ function renderQuestion() {
 
 function selectOption(selectedIndex, btn) {
     const btns = document.querySelectorAll('.opt-btn');
-    // 禁用所有按鈕，不可改答案
     btns.forEach(b => b.style.pointerEvents = 'none');
 
     const selectedOpt = currentQuestionData.shuffledOptions[selectedIndex];
@@ -188,7 +197,6 @@ function selectOption(selectedIndex, btn) {
         score++;
     } else {
         btn.classList.add('wrong');
-        // 找出正確答案的按鈕並標示
         currentQuestionData.shuffledOptions.forEach((opt, i) => {
             if (opt.originalIndex === currentQuestionData.originalCorrectIndex) {
                 btns[i].classList.add('correct');
@@ -198,7 +206,6 @@ function selectOption(selectedIndex, btn) {
 
     updateStats();
 
-    // 延遲後進入下一題
     setTimeout(() => {
         currentIndex++;
         if (currentIndex < quizPool.length) {
@@ -230,8 +237,6 @@ function showResult() {
     else msg = "需要多加練習喔！";
 
     document.getElementById('comment-text').innerText = msg;
-    
-    // 儲存歷史紀錄
     saveHistory(finalScore);
 }
 
